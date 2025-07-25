@@ -2,33 +2,27 @@
 require_once "../config/database.php";
 require_once "../classes/User.php";
 
-header('Content-Type: application/json');
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $name = trim($_POST['name']);
+    $age = (int) $_POST['age'];
+    $gender = $_POST['gender'];
+    $country = trim($_POST['country']);
+    $bio = trim($_POST['bio']);
 
-$input = json_decode(file_get_contents('php://input'), true);
+    if (empty($name) || $age <= 0 || empty($gender) || empty($country) || empty($bio)) {
+        die("Please fill in all fields correctly.");
+    }
 
-if (!$input) {
-    echo json_encode(['success' => false, 'message' => 'No data received']);
-    exit;
+    $database = new Database();
+    $db = $database->connect();
+
+    $user = new User($db);
+    if ($user->register($name, $age, $gender, $country, $bio)) {
+        echo "✅ User registered successfully!";
+    } else {
+        echo "❌ Failed to register user.";
+    }
 }
-
-$name = trim($input['name'] ?? '');
-$age = (int)($input['age'] ?? 0);
-$gender = $input['gender'] ?? '';
-$country = trim($input['country'] ?? '');
-$bio = trim($input['bio'] ?? '');
-
-if (empty($name) || $age <= 0 || empty($gender) || empty($country) || empty($bio)) {
-    echo json_encode(['success' => false, 'message' => 'Please fill in all fields correctly.']);
-    exit;
-}
-
-$database = new Database();
-$db = $database->connect();
-
-$user = new User($db);
-
-if ($user->register($name, $age, $gender, $country, $bio)) {
-    echo json_encode(['success' => true]);
-} else {
-    echo json_encode(['success' => false, 'message' => 'Failed to register user.']);
-}
+?>
+<br><br>
+<a href="index.php">Back to Form</a>

@@ -1,75 +1,72 @@
-<?php include_once "../includes/header.php"; ?>
 
-<div class="container">
-    <h2>User Registration</h2>
+<?php
+session_start();
+require_once "../config/database.php";
 
-    <form id="registrationForm">
-        <label for="name">Name</label>
-        <input type="text" id="name" name="name" placeholder="Your full name" required>
 
-        <label for="age">Age</label>
-        <input type="number" id="age" name="age" min="1" max="120" placeholder="Your age" required>
+$database = new Database();
+$conn = $database->connect();
+if (!$conn) {
+    die("Connection failed: " . $conn->error);
+}
 
-        <label for="gender">Gender</label>
-        <select id="gender" name="gender" required>
-            <option value="" disabled selected>Select your gender</option>
-            <option value="Female">Female</option>
+$message = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $fullname = $_POST["fullname"];
+    $email = $_POST["email"];
+    $password = password_hash($_POST["password"], PASSWORD_DEFAULT);
+    $gender = $_POST["gender"];
+    $country = $_POST["country"];
+    $bio = $_POST["bio"];
+
+    try {
+        $stmt = $conn->prepare("INSERT INTO users (fullname, email, password, gender, country, bio) 
+                                VALUES (:fullname, :email, :password, :gender, :country, :bio)");
+        $stmt->bindParam(':fullname', $fullname);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':password', $password);
+        $stmt->bindParam(':gender', $gender);
+        $stmt->bindParam(':country', $country);
+        $stmt->bindParam(':bio', $bio);
+        
+        if ($stmt->execute()) {
+            $message = "Registration successful. Please <a href='login.php'>login</a>.";
+        } else {
+            $message = "Registration failed.";
+        }
+    } catch (PDOException $e) {
+        $message = "Error: " . $e->getMessage();
+    }
+}
+?>
+
+
+<?php include "../includes/header.php"; ?>
+
+
+<div class="form-container">
+    
+    <h2>Register</h2>
+    <form method="POST" autocomplete="off">
+        <input type="text" name="fullname" placeholder="Full Name" required>
+        <input type="email" name="email" placeholder="Email Address" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+
+        <select name="gender" required>
+            <option value="">-- Select Gender --</option>
             <option value="Male">Male</option>
-            <option value="Other">Other</option>
+            <option value="Female">Female</option>
         </select>
 
-        <label for="country">Country</label>
-        <input type="text" id="country" name="country" placeholder="Your country" required>
-
-        <label for="bio">Bio</label>
-        <textarea id="bio" name="bio" rows="4" placeholder="Tell us about yourself" required></textarea>
+        <input type="text" name="country" placeholder="Country" required>
+        <textarea name="bio" placeholder="Short Bio" rows="3" required></textarea>
 
         <button type="submit">Register</button>
     </form>
-
-    <div id="message"></div>
+    <p class="msg"><?= $message ?></p>
+    <p>Already have an account? <a href="login.php">Login</a></p>
 </div>
 
-<script>
-document.getElementById('registrationForm').addEventListener('submit', function(e){
-    e.preventDefault();
-
-    const form = e.target;
-    const data = {
-        name: form.name.value.trim(),
-        age: form.age.value.trim(),
-        gender: form.gender.value,
-        country: form.country.value.trim(),
-        bio: form.bio.value.trim()
-    };
-
-    if (!data.name || !data.age || !data.gender || !data.country || !data.bio) {
-        alert("Please fill all fields.");
-        return;
-    }
-
-    fetch('process.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(res => {
-        const msgDiv = document.getElementById('message');
-        if (res.success) {
-            msgDiv.style.color = 'green';
-            msgDiv.textContent = "User registered successfully!";
-            form.reset();
-        } else {
-            msgDiv.style.color = 'red';
-            msgDiv.textContent = "❌ " + res.message;
-        }
-    })
-    .catch(err => {
-        alert("An error occurred. Try again.");
-        console.error(err);
-    });
-});
-</script>
-
-<?php include_once "../includes/footer.php"; ?>
+<?php include "../includes/footer.php"; ?>

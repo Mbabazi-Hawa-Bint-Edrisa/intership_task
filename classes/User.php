@@ -8,18 +8,36 @@ class User extends Person {
         $this->conn = $db;
     }
 
-    public function register($name, $age, $gender, $country, $bio) {
-        $this->setData($name, $age, $gender, $country, $bio);
+    public function register($name, $gender, $country, $bio, $email, $password) {
+        $this->setData($name, $gender, $country, $bio, $email, $password);
 
-        $sql = "INSERT INTO users (name, age, gender, country, bio) 
-                VALUES (:name, :age, :gender, :country, :bio)";
+        $hashedPassword = password_hash($this->password, PASSWORD_DEFAULT);
+
+        $sql = "INSERT INTO users (name, gender, country, bio, email, password) 
+                VALUES (:name, :gender, :country, :bio, :email, :password)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(":name", $this->name);
-        $stmt->bindParam(":age", $this->age);
         $stmt->bindParam(":gender", $this->gender);
         $stmt->bindParam(":country", $this->country);
         $stmt->bindParam(":bio", $this->bio);
-        
+        $stmt->bindParam(":email", $this->email);
+        $stmt->bindParam(":password", $hashedPassword);
+
         return $stmt->execute();
+    }
+
+    public function login($email, $password) {
+        $sql = "SELECT * FROM users WHERE email = :email";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(":email", $email);
+        $stmt->execute();
+
+        if ($stmt->rowCount() === 1) {
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (password_verify($password, $user['password'])) {
+                return $user;
+            }
+        }
+        return false;
     }
 }
