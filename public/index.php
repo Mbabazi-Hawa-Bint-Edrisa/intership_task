@@ -1,8 +1,6 @@
-
 <?php
 session_start();
 require_once "../config/database.php";
-
 
 $database = new Database();
 $conn = $database->connect();
@@ -13,33 +11,50 @@ if (!$conn) {
 $message = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $fullname = $_POST["fullname"];
-    $email = $_POST["email"];
-    $password = password_hash($_POST["password"], PASSWORD_DEFAULT);
+    $fullname = trim($_POST["fullname"]);
+    $email = trim($_POST["email"]);
+    $password = $_POST["password"];
+    $confirm_password = $_POST["confirm_password"];
     $gender = $_POST["gender"];
-    $country = $_POST["country"];
-    $bio = $_POST["bio"];
+    $country = trim($_POST["country"]);
+    $bio = trim($_POST["bio"]);
 
-    try {
-        $stmt = $conn->prepare("INSERT INTO users (fullname, email, password, gender, country, bio) 
-                                VALUES (:fullname, :email, :password, :gender, :country, :bio)");
-        $stmt->bindParam(':fullname', $fullname);
-        $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':password', $password);
-        $stmt->bindParam(':gender', $gender);
-        $stmt->bindParam(':country', $country);
-        $stmt->bindParam(':bio', $bio);
-        
-        if ($stmt->execute()) {
-            $message = "Registration successful. Please <a href='login.php'>login</a>.";
-        } else {
-            $message = "Registration failed.";
+    if ($password !== $confirm_password) {
+        $message = "Passwords do not match.";
+    } else {
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+        try {
+            // checking if user already exists in database 
+            $checkStmt = $conn->prepare("SELECT id FROM users WHERE email = :email");
+            $checkStmt->bindParam(':email', $email);
+            $checkStmt->execute();
+
+            if ($checkStmt->rowCount() > 0) {
+                $message = "User with this email already exists. Please login.";
+            } else {
+                $stmt = $conn->prepare("INSERT INTO users (fullname, email, password, gender, country, bio) 
+                                    VALUES (:fullname, :email, :password, :gender, :country, :bio)");
+                $stmt->bindParam(':fullname', $fullname);
+                $stmt->bindParam(':email', $email);
+                $stmt->bindParam(':password', $hashed_password);
+                $stmt->bindParam(':gender', $gender);
+                $stmt->bindParam(':country', $country);
+                $stmt->bindParam(':bio', $bio);
+
+                if ($stmt->execute()) {
+                    $message = "Registration successful. Please <a href='login.php'>login</a>.";
+                } else {
+                    $message = "Registration failed.";
+                }
+            }
+        } catch (PDOException $e) {
+            $message = "Error: " . $e->getMessage();
         }
-    } catch (PDOException $e) {
-        $message = "Error: " . $e->getMessage();
     }
 }
 ?>
+
 
 
 <?php include "../includes/header.php"; ?>
