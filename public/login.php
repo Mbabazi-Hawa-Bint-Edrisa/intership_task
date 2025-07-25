@@ -49,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <!-- cookie consent alert -->
 <div id="cookieConsent" style="position: fixed; bottom: 0; width: 100%; background: #222; color: white; padding: 15px; text-align: center; display: none; z-index: 1000;">
-  This website uses cookies to ensure you get the best experience. 
+  This site uses cookies to ensure you get the best experience. 
   <button id="acceptCookies" style="margin-left: 15px; padding: 8px 12px; cursor: pointer;">Accept Cookies</button>
 </div>
 
